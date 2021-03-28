@@ -1,0 +1,57 @@
+We can undelete big query table using table snapshot decorators and ‘FOR SYSTEM_TIME AS OF’. 
+Deleted table will be available in big query temporary location for some time. So it is possible to retrieve your data that were deleted within the last few days .
+
+Limits:
+We can’t undelete the table in following situations.
+
+When Table dropped :
+•	You have recreated new table with same name.
+•	Tables which were deleted time is more than 2 days.
+If rows deleted but table not dropped :
+•	You can only undelete rows that were deleted within the last 7 days.
+
+
+Syntax : 
+INSERT INTO `project.dataset.table`
+SELECT * FROM `project.dataset.table`
+FOR SYSTEM_TIME AS OF '2020-05-19 18:10:00';
+
+Or using command line-
+
+bq cp `project.dataset.table@1589929800000` `project.dataset.table`
+
+Note :- make sure to convert timestamp '2020-05-19 18:10:00' in milliseconds  ‘1589929800000’. We can do that using below Unix command. 
+
+$date -d '2020-05-19 18:10:00' +"%s"  
+Result will be in seconds – 1589929800. Now multiply this with 1000 to convert seconds into milliseconds.
+
+Example :- 
+
+Let’s say by mistake we deleted few rows using below sql.
+delete from `sample_project.sample_dataset.sample_table`
+where 1=1;
+--4 rows removed.
+
+We want to reinsert these rows and we now these rows were available in this table on '2020-05-19 18:10:00'.
+Simply use any of below 2 options to recover the deleted rows.
+
+INSERT INTO `sample_project.sample_dataset.sample_table`
+SELECT * FROM `sample_project.sample_dataset.sample_table`
+FOR SYSTEM_TIME AS OF '2020-05-19 18:10:00';
+--4 rows added.
+
+OR
+
+bq cp sample_project:sample_dataset.sample_table@1589929800000 sample_project:sample_dataset.sample_table
+
+Result : Tables 'sample_project:sample_dataset.sample_table@1589929800000' successfully copied to 'sample_project:sample_dataset.sample_table'
+
+Here We are trying to read from the table as of before the delete happened and then inserting into the same itself (which as of now is empty). This is a very handy functionality that you may end up using often.
+For more details, please visit https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#for-system-time-as-of 
+
+Hope this will be helpful. Thanks!!
+
+Best Regards,
+Mahaveer Soni,
+
+
